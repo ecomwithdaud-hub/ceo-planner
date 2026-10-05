@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#f6f5f1">
+    <title>Sign in — Zepra</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js" defer></script>
+    <script src="supabase-config.js" defer></script>
+    <script src="auth.js" defer></script>
+  </head>
+  <body class="auth-page">
+    <main class="auth-card">
+      <a class="brand auth-brand" href="index.html" aria-label="Zepra home">
+        <span class="brand-mark" aria-hidden="true"><span></span><span></span><span></span></span>
+        <span>zepra<span class="brand-period">.</span></span>
+      </a>
+      <p class="section-kicker">YOUR WORKSPACE, WHEREVER YOU ARE</p>
+      <h1 id="auth-title">Welcome back.</h1>
+      <p class="auth-intro" id="auth-intro">Sign in to pick up where you left off.</p>
+      <div class="auth-config-warning" id="auth-config-warning" role="alert" hidden>
+        Supabase is not configured yet. Add your project URL and anon key to <code>supabase-config.js</code>, then run the SQL in <code>supabase-schema.sql</code>.
+      </div>
+      <form id="auth-form">
+        <label for="auth-email">Email</label>
+        <input id="auth-email" name="email" type="email" autocomplete="email" required maxlength="254" placeholder="you@example.com">
+        <label for="auth-password">Password</label>
+        <input id="auth-password" name="password" type="password" autocomplete="current-password" required minlength="6" placeholder="At least 6 characters">
+        <button class="primary-button auth-submit" id="auth-submit" type="submit">Sign in</button>
+      </form>
+      <p class="auth-message" id="auth-message" role="status" aria-live="polite"></p>
+      <button class="auth-switch" id="auth-switch" type="button">New to Zepra? Create an account</button>
+      <button class="auth-sign-out" id="auth-sign-out" type="button" hidden>Sign out</button>
+      <a class="auth-back" href="index.html">← Back to your command center</a>
+    </main>
+  </body>
+</html>

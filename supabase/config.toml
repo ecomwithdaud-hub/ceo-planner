@@ -1,0 +1,2 @@
+[functions.plan-evening]
+verify_jwt = true

@@ -10,9 +10,12 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js" defer></script>
+    <script src="supabase-config.js" defer></script>
     <script src="app.js" defer></script>
   </head>
-  <body>
+  <body class="session-loading">
+    <div class="cloud-loading" id="cloud-loading" role="status"><span id="cloud-loading-message">Connecting to your secure workspace…</span><button id="cloud-retry-button" type="button" hidden>Retry</button></div>
     <div class="app-shell">
       <aside class="sidebar" aria-label="Main navigation">
         <a class="brand" href="#" aria-label="Zepra home">
@@ -26,6 +29,8 @@
           <a class="nav-item" href="#schedule"><span class="nav-icon">▦</span> My schedule</a>
           <a class="nav-item" href="#focus"><span class="nav-icon">◷</span> Focus room</a>
           <a class="nav-item" href="#brain-dump"><span class="nav-icon">⌁</span> Brain dump</a>
+          <button class="nav-item nav-action" id="open-calendar-button" type="button"><span class="nav-icon">▣</span> Calendar & history</button>
+          <button class="nav-item nav-action" id="open-evening-plan-button" type="button"><span class="nav-icon">✧</span> Evening planning</button>
         </nav>
 
         <div class="sidebar-bottom">
@@ -34,10 +39,14 @@
             <p class="sidebar-card-title">A little reminder</p>
             <p class="sidebar-card-copy">You don’t have to do it all today. Just the next right thing.</p>
           </div>
-          <div class="profile">
+          <div class="profile" id="profile">
             <div class="avatar">Z</div>
-            <div class="profile-copy"><strong>Founder mode</strong><span>Your space, your pace</span></div>
-            <span class="profile-menu" aria-hidden="true">···</span>
+            <div class="profile-copy"><strong id="profile-name">Founder mode</strong><span id="profile-caption">Your space, your pace</span></div>
+            <button class="profile-menu" id="profile-menu-button" type="button" aria-label="Open account menu" aria-haspopup="true" aria-expanded="false">···</button>
+            <div class="profile-dropdown" id="profile-dropdown" role="menu" hidden>
+              <p id="profile-email"></p>
+              <button id="sign-out-button" type="button" role="menuitem">Sign out</button>
+            </div>
           </div>
         </div>
       </aside>
@@ -82,7 +91,7 @@
         <div class="dashboard-grid">
           <section class="panel schedule-panel" id="schedule">
             <div class="panel-heading">
-              <div><p class="section-kicker">YOUR GAME PLAN</p><h2>Today’s schedule</h2></div>
+              <div><p class="section-kicker">YOUR GAME PLAN</p><h2 id="schedule-heading">Today’s schedule</h2></div>
               <button class="text-button" id="add-block-button" type="button">＋ Add block</button>
             </div>
             <div class="day-strip" id="day-strip" aria-label="This week"></div>
@@ -121,7 +130,7 @@
 
             <section class="panel tasks-panel">
               <div class="panel-heading">
-                <div><p class="section-kicker">THE IMPORTANT STUFF</p><h2>Today’s priorities</h2></div>
+                <div><p class="section-kicker">THE IMPORTANT STUFF</p><h2 id="tasks-heading">Today’s priorities</h2></div>
                 <span class="task-count" id="task-count">0 tasks</span>
               </div>
               <form class="quick-add" id="task-form">
@@ -148,6 +157,49 @@
         <footer class="page-footer">Built for big ideas and the humans behind them <span>✦</span></footer>
       </main>
     </div>
+    <dialog class="planner-dialog calendar-dialog" id="calendar-dialog" aria-labelledby="calendar-title">
+      <div class="dialog-heading">
+        <div><p class="section-kicker">YOUR HISTORY</p><h2 id="calendar-title">Choose a day</h2></div>
+        <button class="dialog-close" data-close-dialog type="button" aria-label="Close calendar">×</button>
+      </div>
+      <div class="calendar-controls">
+        <button class="calendar-nav" id="calendar-previous" type="button" aria-label="Previous month">‹</button>
+        <strong id="calendar-month-label"></strong>
+        <button class="calendar-nav" id="calendar-next" type="button" aria-label="Next month">›</button>
+      </div>
+      <div class="calendar-weekdays" aria-hidden="true"><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span></div>
+      <div class="calendar-grid" id="calendar-grid" role="grid" aria-label="Calendar dates"></div>
+      <div class="calendar-legend"><span></span> Days with saved planner data</div>
+      <button class="text-button calendar-today" id="calendar-today" type="button">Go to today</button>
+    </dialog>
+    <dialog class="planner-dialog evening-dialog" id="evening-dialog" aria-labelledby="evening-title">
+      <div class="dialog-heading">
+        <div><p class="section-kicker">MAKE TOMORROW LIGHTER</p><h2 id="evening-title">Evening planning</h2></div>
+        <button class="dialog-close" data-close-dialog type="button" aria-label="Close evening planner">×</button>
+      </div>
+      <p class="dialog-intro">Tell your planning assistant what happened today and what tomorrow needs to hold. It will draft a time-blocked plan for you to review.</p>
+      <p class="assistant-privacy">Your summary, tasks, and constraints are sent to Gemini through the secured Supabase function and are not saved as assistant history.</p>
+      <form id="evening-plan-form" class="evening-form">
+        <label for="evening-summary">End-of-day summary</label>
+        <textarea id="evening-summary" maxlength="6000" rows="4" placeholder="What got done, what slipped, and anything still on your mind?" required></textarea>
+        <label for="evening-tasks">Tasks for tomorrow</label>
+        <textarea id="evening-tasks" maxlength="3000" rows="3" placeholder="One task per line. Include priorities or deadlines if helpful."></textarea>
+        <label for="evening-constraints">Shift, meetings, holidays, or time constraints</label>
+        <textarea id="evening-constraints" maxlength="2000" rows="3" placeholder="For example: work 10–4, school pickup at 3, holiday afternoon, no meetings before 11."></textarea>
+        <button class="primary-button evening-generate" id="generate-plan-button" type="submit">✧ Generate tomorrow’s plan</button>
+      </form>
+      <p class="auth-message evening-status" id="evening-status" role="status" aria-live="polite"></p>
+      <section class="plan-preview" id="plan-preview" hidden aria-live="polite">
+        <div class="plan-preview-heading"><div><p class="section-kicker">DRAFT PLAN</p><h3 id="plan-preview-title">Tomorrow</h3></div><span id="plan-block-count"></span></div>
+        <p class="plan-apply-note">Applying replaces that day’s schedule and adds any tasks not already on its list.</p>
+        <div class="plan-preview-list" id="plan-preview-list"></div>
+        <div class="plan-preview-tasks">
+          <h4>Tasks to carry forward</h4>
+          <ul id="plan-preview-tasks"></ul>
+        </div>
+        <button class="primary-button evening-apply" id="apply-plan-button" type="button">Apply plan to tomorrow</button>
+      </section>
+    </dialog>
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
   </body>
 </html>
